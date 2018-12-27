@@ -6,8 +6,18 @@ const findReachableUrls = require("find-reachable-urls");
 const repositoryUrl = require("./repository-url");
 const xpathHelper = require("./xpath-helper");
 const registryConfig = require("../config.json");
+const cache = require("./cache");
 
 module.exports = async function doRequest(packageName, type) {
+  const cacheKey = `${type}_${packageName}`;
+
+  cache.getSize();
+
+  if (cache.has(cacheKey)) {
+    console.log(">>cache_read", cacheKey);
+    return cache.get(cacheKey);
+  }
+
   const config = registryConfig[type];
 
   const requestUrl = util.format(
@@ -51,6 +61,9 @@ module.exports = async function doRequest(packageName, type) {
         url = bestMatchUrl;
       }
 
+      // http://localhost:3000/npm/uiautomatorwd
+      // returns https:github.com/macacajs/uiautomatorwd.git which cause a timeout
+
       return url;
     } catch (err) {
       return false;
@@ -64,6 +77,9 @@ module.exports = async function doRequest(packageName, type) {
   if (!reachableUrl) {
     throw Boom.notFound("No URL for package found");
   }
+
+  console.log(">>cache_write", cacheKey, reachableUrl);
+  cache.set(cacheKey, reachableUrl);
 
   return reachableUrl;
 };
