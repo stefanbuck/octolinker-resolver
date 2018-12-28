@@ -1,27 +1,31 @@
-// const Receptacle = require("receptacle");
-
-// const cache = new Receptacle();
-
-const { promisify } = require("util");
 const redis = require("redis");
-const client = redis.createClient({
-  port: 13274,
-  host: "redis-13274.c60.us-west-1-2.ec2.cloud.redislabs.com",
-  password: process.env.REDIS_PWD
-});
-
-client.on("error", function(err) {
-  console.log("error event - " + client.host + ":" + client.port + " - " + err);
-});
-
-const getAsync = promisify(client.get).bind(client);
-const setAsync = promisify(client.set).bind(client);
+let client;
 
 module.exports = {
+  auth: () => {
+    client = redis.createClient({
+      port: 10651,
+      host: "redis-10651.c60.us-west-1-2.ec2.cloud.redislabs.com",
+      password: process.env.REDIS_PWD
+    });
+  },
+  quit: () => {
+    client.quit();
+  },
   set: (key, value) => {
-    return setAsync(key, value);
+    return new Promise((resolve, reject) => {
+      client.set(key, value, error => {
+        if (error) return reject(error);
+        resolve();
+      });
+    });
   },
   get: key => {
-    return getAsync(key);
+    return new Promise((resolve, reject) => {
+      client.get(key, (error, value) => {
+        if (error) return reject(error);
+        resolve(value);
+      });
+    });
   }
 };

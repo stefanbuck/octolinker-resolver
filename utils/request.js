@@ -11,10 +11,12 @@ const cache = require("./cache");
 module.exports = async function doRequest(packageName, type) {
   const cacheKey = `${type}_${packageName}`;
 
+  cache.auth();
   const cacheValue = await cache.get(cacheKey);
 
   if (!!cacheValue) {
     console.log(">>cache_read", cacheKey);
+    cache.quit();
     return cacheValue;
   }
 
@@ -79,7 +81,9 @@ module.exports = async function doRequest(packageName, type) {
   }
 
   console.log(">>cache_write", cacheKey, reachableUrl);
-  cache.set(cacheKey, reachableUrl);
+  cache.set(cacheKey, reachableUrl, () => {
+    cache.quit();
+  });
 
   return reachableUrl;
 };
