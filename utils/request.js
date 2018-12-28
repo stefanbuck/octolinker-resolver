@@ -11,11 +11,11 @@ const cache = require("./cache");
 module.exports = async function doRequest(packageName, type) {
   const cacheKey = `${type}_${packageName}`;
 
-  cache.getSize();
+  const cacheValue = await cache.get(cacheKey);
 
-  if (cache.has(cacheKey)) {
+  if (!!cacheValue) {
     console.log(">>cache_read", cacheKey);
-    return cache.get(cacheKey);
+    return cacheValue;
   }
 
   const config = registryConfig[type];

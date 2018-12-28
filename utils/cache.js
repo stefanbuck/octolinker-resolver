@@ -2,20 +2,26 @@
 
 // const cache = new Receptacle();
 
-const cache = new Map();
-const name = Math.random()
-  .toString(36)
-  .replace(/[^a-z]+/g, "")
-  .substr(0, 8);
+const { promisify } = require("util");
+const redis = require("redis");
+const client = redis.createClient({
+  port: 13274,
+  host: "redis-13274.c60.us-west-1-2.ec2.cloud.redislabs.com",
+  password: process.env.REDIS_PWD
+});
+
+client.on("error", function(err) {
+  console.log("error event - " + client.host + ":" + client.port + " - " + err);
+});
+
+const getAsync = promisify(client.get).bind(client);
+const setAsync = promisify(client.set).bind(client);
 
 module.exports = {
-  getSize: () => {
-    console.log(`>>cache_size:${name}`, cache.size);
-  },
   set: (key, value) => {
-    cache.set(key, value);
-    // cache.set(key, value, { ttl: 1800000, refresh: true });
+    return setAsync(key, value);
   },
-  get: key => cache.get(key),
-  has: key => cache.has(key)
+  get: key => {
+    return getAsync(key);
+  }
 };
