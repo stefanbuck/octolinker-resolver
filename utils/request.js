@@ -11,7 +11,7 @@ const cache = require("./cache");
 module.exports = async function doRequest(packageName, type) {
   const cacheKey = `${type}_${packageName}`;
 
-  cache.auth();
+  await cache.auth()
   const cacheValue = await cache.get(cacheKey);
 
   if (!!cacheValue) {
