@@ -9,14 +9,14 @@ const registryConfig = require("../config.json");
 const cache = require("./cache");
 
 module.exports = async function doRequest(packageName, type) {
+  console.log('packageName', packageName, type);
   const cacheKey = `${type}_${packageName}`;
 
-  await cache.auth()
+  // await cache.auth()
   const cacheValue = await cache.get(cacheKey);
 
   if (!!cacheValue) {
     console.log(">>cache_read", cacheKey);
-    cache.quit();
     return cacheValue;
   }
 
@@ -81,9 +81,7 @@ module.exports = async function doRequest(packageName, type) {
   }
 
   console.log(">>cache_write", cacheKey, reachableUrl);
-  cache.set(cacheKey, reachableUrl, () => {
-    cache.quit();
-  });
+  cache.set(cacheKey, reachableUrl);
 
   return reachableUrl;
 };

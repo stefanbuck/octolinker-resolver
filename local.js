@@ -1,4 +1,5 @@
 var http = require("http");
+var got = require("got");
 
 http
   .createServer(function(req, res) {
@@ -10,13 +11,9 @@ http
 console.log("Server running at http://127.0.0.1:3000/");
 
 
-const res = {
-  setHeader: () => {},
-  end: (json) => {
-    console.log('>>>>', res.statusCode, json);
-  },
-}
-
-require("./index.js")( {
-  url: '/npm/backbone',
-},res);
+got.post({
+  url: 'http://localhost:3000/',
+  body: JSON.stringify([
+    {"type":"registry","registry":"npm","target":"lodash"},{"type":"registry","registry":"npm","target":"backbone"}
+  ])
+})
