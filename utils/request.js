@@ -7,20 +7,22 @@ const repositoryUrl = require("./repository-url");
 const xpathHelper = require("./xpath-helper");
 const registryConfig = require("../config.json");
 const cache = require("./cache");
+const log = require("./log");
 
 module.exports = async function doRequest(packageName, type) {
-  console.log('packageName', packageName, type);
   const cacheKey = `${type}_${packageName}`;
 
-  // await cache.auth()
   const cacheValue = await cache.get(cacheKey);
 
   if (!!cacheValue) {
-    console.log(">>cache_read", cacheKey);
     return cacheValue;
   }
 
   const config = registryConfig[type];
+
+  if (!config) {
+    return;
+  }
 
   const requestUrl = util.format(
     config.registry,
@@ -31,18 +33,19 @@ module.exports = async function doRequest(packageName, type) {
   try {
     response = await got.get(requestUrl);
   } catch (err) {
-    if (err.statusCode === 404) {
-      throw Boom.notFound("Package not found");
+   if (err.statusCode === 404) {
+      return log("Package not found", packageName, type);
     }
 
-    throw err;
+    return log(err)
   }
   let json;
 
   try {
     json = JSON.parse(response.body);
   } catch (err) {
-    throw Boom.badImplementation("Parsing response failed");
+    log("Parsing response failed");
+    return;
   }
 
   const urls = xpathHelper(json, config.xpaths);
@@ -77,11 +80,11 @@ module.exports = async function doRequest(packageName, type) {
   const reachableUrl = await findReachableUrls(tryUrls, { firstMatch: true });
 
   if (!reachableUrl) {
-    throw Boom.notFound("No URL for package found");
+    log("No URL for package found");
+    return;
   }
 
-  console.log(">>cache_write", cacheKey, reachableUrl);
-  cache.set(cacheKey, reachableUrl);
+  await cache.set(cacheKey, reachableUrl);
 
   return reachableUrl;
 };

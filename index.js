@@ -1,77 +1,96 @@
-const { json } = require('micro');
-const pMap = require('p-map');
+const { json } = require("micro");
+const pMap = require("p-map");
 const doRequest = require("./utils/request");
 const cache = require("./utils/cache");
+const log = require("./utils/log");
+const got = require("got");
+const tracking = require("./utils/tracking");
+const groupBy = require("lodash.groupby");
+const go = require("./go");
+const logPrefix = log.prefix;
 
-// const { parse } = require("url");
-// const Boom = require("boom");
-// const config = require("./config.json");
+const mapper = async item => {
+  if (item.type === "registry") {
+    return await doRequest(item.target, item.registry);
+  }
 
-// const ALLOWED_REGESTIRES = Object.keys(config);
+  if (item.type === "go") {
+    return await go(item.target);
+  }
 
-// function getPathParams(url) {
-//   const { pathname } = parse(url, true);
-//   return pathname.slice(1).split(/\/(.+)/);
-// }
+  if (item.type === "ping") {
+    return await got
+      .head(item.target)
+      .then(() => item.target)
+      .catch(() => null);
+  }
 
-// function validateParams(type, pkg) {
-//   if (!type) throw Boom.badData("Registry is missing /:registry/:package");
-//   if (!pkg) throw Boom.badData("Package is missing /:registry/:package");
-
-//   if (!ALLOWED_REGESTIRES.includes(type)) {
-//     throw Boom.badData(
-//       "Registry must be one of: " + ALLOWED_REGESTIRES.join(", ")
-//     );
-//   }
-// }
-
-// function errorHandler(error, res) {
-//   if (!error.isBoom) {
-//     error = Boom.boomify(error, error.toString());
-//   }
-
-//   res.statusCode = error.output.statusCode;
-//   res.end(error.output.payload.message);
-// }
-
-// async function requestHandler(res, pkg, type) {
-//   const url = await doRequest(pkg, type);
-
-//   res.setHeader("Content-Type", "application/json");
-//   res.end(JSON.stringify({ url }));
-// }
-
-const simpleCache = {};
-
-
-const mapper = async (item) => {
-		return await doRequest(item.target, item.registry);
-	};
+  return "xxx";
+};
 
 async function requestHandler(payload) {
+  // const groups = groupBy(payload, "type");
 
-  const result = await pMap(payload, mapper, {concurrency: 1});
-
-  return result;
+  return await pMap(payload, mapper, { concurrency: 5 });
 }
 
+function errorHandler(error, res) {
+  log(error);
+  res.statusCode = 500;
+  res.end("Internal server error");
+}
+
+tracking.init();
 
 module.exports = async (req, res) => {
-  if (req.method === 'POST') {
+  if (req.method === "POST") {
+    const timingTotalStart = Date.now();
 
-    console.time('start');
     const body = await json(req);
 
-    await cache.auth()
-    const result = await requestHandler(body)
+    const timingAuthStart = Date.now();
+    await cache.auth();
+    const timingAuthEnd = Date.now();
 
-    console.timeEnd('start');
+    let result;
+    let timingTotalEnd;
+    let completed = false;
 
-    cache.quit();
+    try {
+      result = await requestHandler(body);
+      completed = true;
+    } catch (error) {
+      return errorHandler(error, res);
+    } finally {
+      timingTotalEnd = Date.now();
 
-    console.log(result)
-    res.end('done')
+      log("Redis Status", cache.getRedisStatus());
+      log("SimpleCache size", cache.simpleCacheSize());
+      log("Timing Total", timingTotalEnd - timingTotalStart);
+      log("Timing Auth", timingAuthEnd - timingAuthStart);
+
+      await tracking.track("info2", {
+        completed,
+        instanceName: logPrefix,
+        ...cache.getRedisStatus(),
+        simpleCacheSize: cache.simpleCacheSize(),
+        exectuionTime: timingTotalEnd - timingTotalStart
+      });
+    }
+
+    res.end(
+      JSON.stringify({
+        result,
+        meta: {
+          ...cache.getRedisStatus(),
+          simpleCacheSize: cache.simpleCacheSize(),
+          instance: logPrefix,
+          timingTotal: timingTotalEnd - timingTotalStart,
+          timingAuth: timingAuthEnd - timingAuthStart
+        }
+      })
+    );
   } else {
-    res.end('Not valid')
+    res.end(Date());
   }
 };

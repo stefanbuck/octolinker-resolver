@@ -1,19 +1,70 @@
 var http = require("http");
 var got = require("got");
 
-http
-  .createServer(function(req, res) {
-    if (!req.url.includes("favicon.ico")) {
-      require("./index.js")(req, res);
-    }
-  })
-  .listen(3000);
-console.log("Server running at http://127.0.0.1:3000/");
+const isRemote = process.argv.length === 3;
 
+const zeitId = process.argv[2];
 
-got.post({
-  url: 'http://localhost:3000/',
-  body: JSON.stringify([
-    {"type":"registry","registry":"npm","target":"lodash"},{"type":"registry","registry":"npm","target":"backbone"}
-  ])
-})
+if (!zeitId) {
+  http
+    .createServer(function(req, res) {
+      if (!req.url.includes("favicon.ico")) {
+        require("./index.js")(req, res);
+      }
+    })
+    .listen(3000);
+}
+
+const url = zeitId
+  ? `https://octo-resolver-${zeitId}.now.sh/`
+  : "http://localhost:3000/";
+console.log(url);
+
+let timings = [];
+const initialRequest = () => {
+  console.log("---------------------");
+  got
+    .post({
+      json: true,
+      url,
+      body: [
+        // { type: "registry", registry: "bower", target: "jquery" },
+        // {"type": "registry", "registry": "composer", "target": "phpunit/phpunit"},
+        // {"type": "registry", "registry": "rubygems", "target": "nokogiri"},
+        { type: "registry", registry: "npm", target: "request" },
+        { type: "registry", registry: "npm", target: "request" },
+        // { type: "registry", registry: "npm", target: "babel-helper-regex" },
+        // {"type": "registry", "registry": "npm", "target": "audio-context-polyfill"},
+        // {"type": "registry", "registry": "npm", "target": "github-url-from-username-repo"},
+        // {"type": "registry", "registry": "npm", "target": "find-project-root"},
+        // {"type": "registry", "registry": "pypi", "target": "simplejson"},
+        // {"type": "registry", "registry": "crates", "target": "libc"},
+        { type: "go", target: "k8s.io/kubernetes/pkg/api" },
+
+        // { type: "melpa", target: "zzz-to-char" }, // only supported in API
+
+        { type: "java", target: "org.apache.log4j.Appender" },
+        { type: "ping", target: "https://nodejs.org/api/path.html" },
+        { type: "ping", target: "http://notfound4040.org/path.html" },
+        { type: "unkown", target: "boom" },
+        {},
+        { foo: "bar" },
+        1,
+        "foo"
+      ]
+    })
+    .then(({ body }) => {
+      timings.push(body);
+
+      if (timings.length < 1) {
+        initialRequest();
+      } else {
+        console.log("---------------------");
+        console.log(timings);
+      }
+    })
+    .catch(error => {
+      console.log(error);
+    });
+};
+initialRequest();
