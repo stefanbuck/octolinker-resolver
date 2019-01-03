@@ -33,11 +33,11 @@ module.exports = async function doRequest(packageName, type) {
   try {
     response = await got.get(requestUrl);
   } catch (err) {
-   if (err.statusCode === 404) {
+    if (err.statusCode === 404) {
       return log("Package not found", packageName, type);
     }
 
-    return log(err)
+    return log(err);
   }
   let json;
 
