@@ -1,15 +1,13 @@
 var http = require("http");
 var got = require("got");
 
-const isRemote = process.argv.length === 3;
-
 const zeitId = process.argv[2];
 
 if (!zeitId) {
   http
     .createServer(function(req, res) {
       if (!req.url.includes("favicon.ico")) {
-        require("./index.js")(req, res);
+        require("./api/handler.js")(req, res);
       }
     })
     .listen(3000);
@@ -31,6 +29,7 @@ const initialRequest = () => {
         // { type: "registry", registry: "bower", target: "jquery" },
         // {"type": "registry", "registry": "composer", "target": "phpunit/phpunit"},
         // {"type": "registry", "registry": "rubygems", "target": "nokogiri"},
+        { type: "registry", registry: "foo", target: "bar" },
         { type: "registry", registry: "npm", target: "request" },
         { type: "registry", registry: "npm", target: "request" },
         // { type: "registry", registry: "npm", target: "babel-helper-regex" },
@@ -60,7 +59,7 @@ const initialRequest = () => {
         initialRequest();
       } else {
         console.log("---------------------");
-        console.log(timings);
+        console.log(JSON.stringify(timings, null, " "));
       }
     })
     .catch(error => {

@@ -1,36 +1,33 @@
 const { json } = require("micro");
 const pMap = require("p-map");
-const doRequest = require("./utils/request");
-const cache = require("./utils/cache");
-const log = require("./utils/log");
-const got = require("got");
-const tracking = require("./utils/tracking");
-const groupBy = require("lodash.groupby");
+const registries = require("./registries");
+const cache = require("../utils/cache");
+const log = require("../utils/log");
+const tracking = require("../utils/tracking");
 const go = require("./go");
+const ping = require("./ping");
 const logPrefix = log.prefix;
 
 const mapper = async item => {
-  if (item.type === "registry") {
-    return await doRequest(item.target, item.registry);
+  let result;
+
+  if (item.type === "registry" && registries.supported(item.registry)) {
+    result = await registries.resolve(item.registry, item.target);
+  } else if (item.type === "go") {
+    result = await go(item.target);
+  } else if (item.type === "ping") {
+    result = await ping(item.target);
+  } else {
+    return;
   }
 
-  if (item.type === "go") {
-    return await go(item.target);
-  }
-
-  if (item.type === "ping") {
-    return await got
-      .head(item.target)
-      .then(() => item.target)
-      .catch(() => null);
-  }
-
-  return "xxx";
+  return {
+    ...item,
+    result
+  };
 };
 
 async function requestHandler(payload) {
-  // const groups = groupBy(payload, "type");
-
   return await pMap(payload, mapper, { concurrency: 5 });
 }
 

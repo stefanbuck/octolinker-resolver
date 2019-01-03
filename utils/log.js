@@ -3,8 +3,10 @@ const name = Math.random()
   .replace(/[^a-z]+/g, "")
   .substr(0, 8);
 
-module.exports = function() {
+function log() {
   console.log.apply(this, [`>> ${name}:`, ...arguments]);
-};
+}
 
-module.exports.prefix = name;
+log.prefix = name;
+
+module.exports = log;

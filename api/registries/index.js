@@ -1,15 +1,14 @@
 const util = require("util");
 const got = require("got");
 const isUrl = require("is-url");
-const Boom = require("boom");
 const findReachableUrls = require("find-reachable-urls");
 const repositoryUrl = require("./repository-url");
 const xpathHelper = require("./xpath-helper");
-const registryConfig = require("../config.json");
-const cache = require("./cache");
-const log = require("./log");
+const registryConfig = require("./config.json");
+const cache = require("../../utils/cache");
+const log = require("../../utils/log");
 
-module.exports = async function doRequest(packageName, type) {
+async function resolve(type, packageName) {
   const cacheKey = `${type}_${packageName}`;
 
   const cacheValue = await cache.get(cacheKey);
@@ -87,4 +86,9 @@ module.exports = async function doRequest(packageName, type) {
   await cache.set(cacheKey, reachableUrl);
 
   return reachableUrl;
+}
+
+module.exports = {
+  supported: type => Object.keys(registryConfig).includes(type),
+  resolve
 };

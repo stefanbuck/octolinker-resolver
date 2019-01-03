@@ -1,9 +1,9 @@
 {
     "version": 2,
     "builds": [
-        { "src": "*.js", "use": "@now/node" }
+        { "src": "api/handler.js", "use": "@now/node" }
     ],
     "routes": [
-      { "src": "/.*", "dest": "/index.js"}
+      { "src": "/.*", "dest": "/api/handler.js"}
     ]
   }

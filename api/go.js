@@ -1,7 +1,7 @@
 const findReachableUrls = require("find-reachable-urls");
 const readMeta = require("lets-get-meta");
 const got = require("got");
-const cache = require("./utils/cache");
+const cache = require("../utils/cache");
 
 const getGoMeta = async url => {
   const response = await got.get(url);
