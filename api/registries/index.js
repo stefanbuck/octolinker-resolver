@@ -89,6 +89,6 @@ async function resolve(type, packageName) {
 }
 
 module.exports = {
-  supported: type => Object.keys(registryConfig).includes(type),
+  supported: Object.keys(registryConfig),
   resolve
 };

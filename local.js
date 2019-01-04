@@ -30,9 +30,10 @@ const initialRequest = () => {
         // {"type": "composer", "target": "phpunit/phpunit"},
         // {"type": "rubygems", "target": "nokogiri"},
         { type: "foo", target: "bar" },
+        { type: "npm", target: "" },
         { type: "npm", target: "request" },
         { type: "npm", target: "request" },
-        // { type: "npm", target: "babel-helper-regex" },
+        { type: "npm", target: "babel-helper-regex" },
         // {"type": "npm", "target": "audio-context-polyfill"},
         // {"type": "npm", "target": "github-url-from-username-repo"},
         // {"type": "npm", "target": "find-project-root"},
@@ -49,6 +50,7 @@ const initialRequest = () => {
         {},
         { foo: "bar" },
         1,
+        undefined,
         "foo"
       ]
     })

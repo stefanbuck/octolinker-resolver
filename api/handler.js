@@ -1,5 +1,7 @@
 const { json } = require("micro");
 const pMap = require("p-map");
+const uniqWith = require("lodash.uniqwith");
+const isEqual = require("lodash.isequal");
 const registries = require("./registries");
 const cache = require("../utils/cache");
 const log = require("../utils/log");
@@ -8,10 +10,12 @@ const go = require("./go");
 const ping = require("./ping");
 const logPrefix = log.prefix;
 
+const supportedTypes = ["ping", "go", ...registries.supported];
+
 const mapper = async item => {
   let result;
 
-  if (registries.supported(item.type)) {
+  if (registries.supported.includes(item.type)) {
     result = await registries.resolve(item.type, item.target);
   } else if (item.type === "go") {
     result = await go(item.target);
@@ -26,6 +30,19 @@ const mapper = async item => {
     result
   };
 };
+
+function cleanPayload(payload) {
+  // Remove duplicates
+  // Remove invalid items which does not follow format {type:'foo', target: 'bar'}
+  // Filter out types which are not supported
+  return uniqWith(payload, isEqual).filter(
+    item =>
+      item &&
+      item.target &&
+      item.target.length &&
+      supportedTypes.includes(item.type)
+  );
+}
 
 async function requestHandler(payload) {
   return await pMap(payload, mapper, { concurrency: 5 });
@@ -52,9 +69,10 @@ module.exports = async (req, res) => {
     let result;
     let timingTotalEnd;
     let completed = false;
+    const payload = cleanPayload(body);
 
     try {
-      result = await requestHandler(body);
+      result = await requestHandler(payload);
       completed = true;
     } catch (error) {
       return errorHandler(error, res);
@@ -73,6 +91,20 @@ module.exports = async (req, res) => {
         simpleCacheSize: cache.simpleCacheSize(),
         exectuionTime: timingTotalEnd - timingTotalStart
       });
+
+      await tracking.track(
+        "types3",
+        payload.reduce((memo, item) => {
+          if (!memo[item.type]) {
+            memo[item.type] = [];
+          }
+          if (item.target) {
+            memo[item.type].push(item.target);
+          }
+
+          return memo;
+        }, {})
+      );
     }
 
     res.end(
