@@ -11,8 +11,8 @@ const logPrefix = log.prefix;
 const mapper = async item => {
   let result;
 
-  if (item.type === "registry" && registries.supported(item.registry)) {
-    result = await registries.resolve(item.registry, item.target);
+  if (registries.supported(item.type)) {
+    result = await registries.resolve(item.type, item.target);
   } else if (item.type === "go") {
     result = await go(item.target);
   } else if (item.type === "ping") {
