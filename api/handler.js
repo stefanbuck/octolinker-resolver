@@ -123,6 +123,6 @@ module.exports = async (req, res) => {
       })
     );
   } else {
-    res.end(Date());
+    res.end("OctoResolver");
   }
 };
