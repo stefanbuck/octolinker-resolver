@@ -17,6 +17,7 @@
     "redis": "^2.8.0"
   },
   "devDependencies": {
+    "jsdom": "^13.1.0",
     "prettier": "^1.15.3"
   },
   "scripts": {

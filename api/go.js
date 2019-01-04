@@ -54,7 +54,7 @@ const resolveUrl = async url => {
   return reachableUrl;
 };
 
-module.exports = async function doRequest(pkg) {
+module.exports = async function(pkg) {
   //   const eventData = {
   //     registry: "go",
   //     resourceId: `go:::${pkg}`,

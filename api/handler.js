@@ -7,10 +7,11 @@ const cache = require("../utils/cache");
 const log = require("../utils/log");
 const tracking = require("../utils/tracking");
 const go = require("./go");
+const java = require("./java");
 const ping = require("./ping");
 const logPrefix = log.prefix;
 
-const supportedTypes = ["ping", "go", ...registries.supported];
+const supportedTypes = ["ping", "go", "java", ...registries.supported];
 
 const mapper = async item => {
   let result;
@@ -19,6 +20,8 @@ const mapper = async item => {
     result = await registries.resolve(item.type, item.target);
   } else if (item.type === "go") {
     result = await go(item.target);
+  } else if (item.type === "java") {
+    result = await java(item.target);
   } else if (item.type === "ping") {
     result = await ping(item.target);
   } else {
